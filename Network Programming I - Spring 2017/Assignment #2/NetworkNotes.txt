@@ -1,0 +1,3 @@
+Windows could be though of logs.
+I need a consesensus from the server before I can put them in this window
+
