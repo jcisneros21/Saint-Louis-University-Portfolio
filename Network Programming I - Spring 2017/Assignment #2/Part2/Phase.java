@@ -1,15 +1,25 @@
 import java.net.*;
 
 public interface Phase{
+  // Parses the client's message and looks at the values
+  // to see if they are correct depending on the format
   public boolean parseMessage(String message);
+  // Returns a correct Message to the server
   public String correctMessage();
+  // Returns a incorrect Message to the Server
   public String incorrectMessage();
 }
 
-// Done
+
 class SetupPhase implements Phase{
   private String m_type = null;
 
+  // Checks for correct values.
+  // Represents the logic to analyze the values of the
+  // setup message. I apologize for the mess. I believe
+  // that by looking at each if statement you can determine
+  // what it is checking so I don't need to write unnecessary
+  // comments.
   public boolean correctValues(String type, String value){
     int i;
     int amount;
@@ -23,6 +33,7 @@ class SetupPhase implements Phase{
       }
     }
     else if(type.equals("m-type")){
+      // Looks to see if correct measurement type
       if(value.equals("rtt")){
         this.m_type = "rtt";
         return true;
@@ -33,8 +44,12 @@ class SetupPhase implements Phase{
       }
     }
     else if(type.equals("probes")){
+      // Looks to see if it is an integer more than 10
       try {
-        Integer.parseInt(value);
+        amount = Integer.parseInt(value);
+        if(amount < 10){
+          return false;
+        }
         return true;
       }
       catch(NumberFormatException e){
@@ -42,6 +57,7 @@ class SetupPhase implements Phase{
       }
     }
     else if(type.equals("msg_size")){
+      // Looks to see if it is a correct message size
       try {
         amount = Integer.parseInt(value);
         if(this.m_type.equals("rtt")){
@@ -65,7 +81,11 @@ class SetupPhase implements Phase{
     }
     else if(type.equals("delay")){
       try {
-        Integer.parseInt(value);
+        // Checks to see if it is an integer
+        amount = Integer.parseInt(value);
+        if(amount < 0){
+          return false;
+        }
         return true;
       }
       catch(NumberFormatException e){
@@ -75,6 +95,7 @@ class SetupPhase implements Phase{
      
     return false;
   }
+ 
 
   public boolean parseMessage(String message){
     int i;
@@ -92,7 +113,6 @@ class SetupPhase implements Phase{
       }
     }
       
-    System.out.println("Setting Up.");
     return true;
   }
 
@@ -120,7 +140,6 @@ class MeasurementPhase implements Phase{
     int seq_holder = 0;
 
     if(type.equals("phase")){
-      System.out.println("In phase");
       if(value.equals("m")){
         return true;
       } 
@@ -129,6 +148,7 @@ class MeasurementPhase implements Phase{
       }
     }
     else if(type.equals("seq_num")){
+      // Makes sure the sequence number is in order
       try{
         seq_holder = Integer.parseInt(value);
         if(seq_holder == this.sequence_num + 1){
@@ -142,11 +162,15 @@ class MeasurementPhase implements Phase{
       }
     }
     else if(type.equals("payload")){
+      // Measures how many bytes the payload is by
+      // the number of characters in the payload
       char payload_array[] = value.toCharArray();
       int payload_size = payload_array.length * 2;
-      System.out.println("The payload size is: " + Integer.toString(payload_size));
-      System.out.println("The probe_amount is: " + Integer.toString(probe_size));
-      if(payload_size == probe_size){
+      // Since characters are 2 bytes in java, I will represent
+      // the 1 byte message size to 2 bytes, since I can't send
+      // a 1 byte character. There shouldn't be a huge differnce
+      // between the two.
+      if(payload_size == probe_size || payload_size == 2){
         return true;
       }
       else{
@@ -158,22 +182,21 @@ class MeasurementPhase implements Phase{
 
   public boolean parseMessage(String message){
     String[] m_values = message.split(" ");
-    String[] m_types = {"phase", "seq_num", "payload"};
+    String[] m_types = {"phase", "seq_num", "payload"}; 
 
     // Checks to see if there is more or less parameters needed
     if(m_values.length != 3){
       return false;
     }
-
+    
+    // Checks each value of the probe message
     int i;
     for(i = 0; i < m_values.length; i++){
-      System.out.println("In the loop");
       if(!checkMessage(m_types[i], m_values[i])){
         return false;
       }
     }
     
-    System.out.println("Returning true");
     return true;
   }
 
@@ -186,20 +209,19 @@ class MeasurementPhase implements Phase{
   }
 }
 
-// Done
+
 class TerminationPhase implements Phase{
 
   public boolean parseMessage(String message){
     String[] m_values = message.split(" ");
-    
-    // If the client sent more than one parameter
+   
+    // Checks to see if the message size is correct 
     if(m_values.length != 1){
       return false;
     }
     
     // Check to see if the protocol phase is correct
-    return m_values[0].equals("t") ? true : false;  
-    
+    return m_values[0].equals("t") ? true : false; 
   }
 
   public String correctMessage(){
@@ -210,9 +232,4 @@ class TerminationPhase implements Phase{
     return "404 ERROR: Invalid Connection Termination Message";
   }
 
-}
-
-class PhaseTesting {
-  public static void main( String[] args ){
-  }
 }

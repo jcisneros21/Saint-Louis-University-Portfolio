@@ -1,39 +1,34 @@
 import java.net.*;
 import java.io.*;
 
-/* In Java, the socket contains a function called
-   getInputStream and getOutputStream to recieve 
-   and send packets. I can access these streams with
-   other classes that Java utilizes these streams on.
-   This stream also has a main stream called InputStream */
-
 public class Server extends Thread {
   private ServerSocket socket;
   
   public Server(int port) throws IOException {
+    // Binds port nuumber to the Server
     socket = new ServerSocket(port);
-    //socket.setSoTimeout(10000);
   }
 
   public void run() {
     while(true) {
       try { 
+        String message = "";
+
         // Blocks until client connects
-        Socket server = socket.accept();
-        byte testing[] = new byte[4096];
-
-        DataInputStream in = new DataInputStream(server.getInputStream());
+        Socket client = socket.accept();
+      
+        // Creates input stream to retrieve from the client 
+        DataInputStream in = new DataInputStream(client.getInputStream());
  
-        System.out.println(in.readUTF());
-        DataOutputStream out = new DataOutputStream(server.getOutputStream());
+        // Will block thread until it recieves a message
+        message = in.readUTF();
 
-        out.writeUTF("Hello");
-        server.close();
+        // Creates output stream to send back to the client
+        DataOutputStream out = new DataOutputStream(client.getOutputStream());
+        out.writeUTF(message);
+
+        client.close();
       }
-      //catch(SocketTimeoutException s) {
-        //System.out.println("Socket Broke!");
-        //break;
-      //}
       catch(IOException e) {
         System.out.println("IO Exception occured");
         break;
@@ -44,6 +39,7 @@ public class Server extends Thread {
   public static void main(String[] args) {
     int port = Integer.parseInt(args[0]);
     try {
+      // Creates an instance of server
       Thread t = new Server(port);
       t.start();
     }

@@ -2,20 +2,6 @@ import java.net.*;
 import java.io.*;
 import java.util.Date;
 
-/* In Java, the socket contains a function called
-   getInputStream and getOutputStream to recieve 
-   and send packets. I can access these streams with
-   other classes that Java utilizes these streams on.
-   This stream also has a main stream called InputStream */
-
-// Bits/seconds is too calculate the throughput
-// Round time trip is the time it takes to send the
-// message, the server recieves the message and
-// the server sends it back for the client to recieve it
-
-// To calculate the throughput I would need to get the
-// save the message time and save the time it would take
-// for the server to recieve the message. bits/sec
 public class Server extends Thread {
   private ServerSocket socket;
   private Phase state;
@@ -29,7 +15,6 @@ public class Server extends Thread {
   
   public Server(int port) throws IOException {
     socket = new ServerSocket(port);
-    //socket.setSoTimeout(10000);
   }
 
   // Initialize Setup Values
@@ -60,7 +45,8 @@ public class Server extends Thread {
         DataOutputStream out = new DataOutputStream(client.getOutputStream());
         DataInputStream in = new DataInputStream(client.getInputStream());
 
-        out.writeUTF("Connection Made");
+        System.out.println("Connection Made.");
+        out.writeUTF("Connection Made.");
 
         // Initialize Setup Phase
         this.state = new SetupPhase();
@@ -76,6 +62,7 @@ public class Server extends Thread {
           // Incorrect Message recieve and terminate connection
           out.writeUTF(this.state.incorrectMessage());
           client.close();
+          System.out.println("Connection Terminated.");
           continue;
         }
      
@@ -84,41 +71,44 @@ public class Server extends Thread {
         
         int i;
         boolean closed_flag = false;
+        // Loop until it recieves all probe messages
         for(i=0; i < this.probe_amount; i++){
-          System.out.println("\n\n" + Integer.toString(i) + "\n\n");
-          // Read Measurement Message
           clientMessage = in.readUTF();
-          System.out.println(clientMessage);
-          
       
           if(this.state.parseMessage(clientMessage)){
-            out.writeUTF("Correct Message!!!!");
-            out.writeUTF(clientMessage);
-            if(measurement_type.equals("tput")){
+            // Sends different values depending on Measurement type
+            if(measurement_type.equals("rtt")){
+              Thread.sleep(this.delay_time);
+              out.writeUTF(clientMessage);
+            }
+            else if(measurement_type.equals("tput")){
               Date date = new Date();
+              Thread.sleep(this.delay_time);
               String strLong = Long.toString(date.getTime());
               out.writeUTF(strLong);
             } 
            
           }
           else{
-            System.out.println("breaked out of the for loop");
             out.writeUTF(this.state.incorrectMessage());
             client.close();
+            System.out.println("Connection Terminated.");
             closed_flag = true;
             break;
           }
         }
         
+        // Skip the current while loop and look for new connection
         if(closed_flag){
           continue;
         }
         
-        System.out.println("I left Measurement Phase!");
         // End the connection
         this.state = new TerminationPhase();
         clientMessage = in.readUTF();
 
+        // We always close the socket, just sends different messages
+        // depending on what the client sends to the server
         if(this.state.parseMessage(clientMessage)){
           out.writeUTF(this.state.correctMessage());
         }
@@ -127,14 +117,14 @@ public class Server extends Thread {
         }   
      
         client.close();
+        System.out.println("Connection Terminated");
       }
-      //catch(SocketTimeoutException s) {
-        //System.out.println("Socket Broke!");
-        //break;
-      //}
       catch(IOException e) {
-        System.out.println("IO Exception occured");
+        System.out.println("IO Exception occured.");
         break;
+      }
+      catch(InterruptedException e){
+        System.out.println("Interrupted Exception occured.");
       }
     }
   }
