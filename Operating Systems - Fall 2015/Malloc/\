@@ -1,0 +1,59 @@
+#include <sys/types.h>
+#include <unistd.h>
+
+#define BLOCK_SIZE sizeof(struct Block)
+
+typedef struct
+{
+   size_t size;
+   struct Block *next;
+} Block;
+
+Block *freelist = NULL;
+
+// global struct that takes in a pointer of a pointer of a Block and size
+/*struct Block *find_free_block(struct Block **last, size_t size)
+{
+   struct Block *current = freelist;
+   while (current && !(current->free && current->size >=size))
+   {
+	*last = current;
+	current = current->next;
+   }
+   return current;
+}*/
+
+//struct Block *find_free_block(
+
+void *mymalloc(size_t size)
+{
+   Block *block;
+
+   if (size <= 0)
+   {
+     return NULL;
+   }
+   
+   if (!freelist)
+   {
+      freelist = block;
+   }
+
+   void *p = sbrk(0);
+   void *request = sbrk(size + BLOCK_SIZE);
+
+   if ( request == (void *) -1)
+   {
+	return NULL;
+   }
+   else
+   {
+	return p;
+   }
+}
+
+void myfree(void *ptr);
+void *mycalloc(size_t num_of_elts, size_t elt_size);
+void *myrealloc(void *pointer, size_t size);
+
+
